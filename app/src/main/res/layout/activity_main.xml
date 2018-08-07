@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.chenyiwu.a311bacclient.MainActivity"
+    android:weightSum="1">
+
+    <TextView
+        android:id="@+id/SeizeSeatText1"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_weight="0.07" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/Temperature_Pad"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/Mode_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/ModeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:textSize="20sp"
+                    android:textColor="#000000"
+                    android:text="模式" />
+
+                <TextView
+                    android:id="@+id/Mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="冷"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/Now_Temperature_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/NowTemperatureText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:text="当前温度"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/Now_Temperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="right|center_vertical"
+                    android:text="13"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+
+                <TextView
+                    android:id="@+id/Temperature_Unit1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|left"
+                    android:textSize="33sp"
+                    android:textColor="#000000"
+                    android:text="℃"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/Aim_Temperature_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:textSize="50sp">
+
+                <TextView
+                    android:id="@+id/AimTemperatureText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:text="目标温度"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/Aim_Temperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical|right"
+                    android:text="26"
+                    android:layout_weight="1"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+
+                <TextView
+                    android:id="@+id/temperature_Unit2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|left"
+                    android:text="℃"
+                    android:textColor="#000000"
+
+                    android:textSize="33sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/Divide"
+            android:layout_width="2dp"
+            android:layout_height="wrap_content"
+            android:background="#ffffff" />
+
+        <LinearLayout
+            android:id="@+id/Feature_Pad"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/FunSpeed_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/FunSpeedText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:text="风速"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/FunSpeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="高"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/EnergyConsum_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/EnergyConsumText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:text="能耗"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/EnergyConsum"
+                    android:layout_width="110dp"
+                    android:layout_height="match_parent"
+
+                    android:gravity="center"
+                    android:text="0.00"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+
+                <TextView
+                    android:id="@+id/EnergyConsum_Unit1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+
+                    android:gravity="center_vertical|end"
+                    android:text="kw·h"
+                    android:textColor="#000000"
+
+                    android:textSize="33sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/Cost_Pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/CostText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:ems="1"
+                    android:gravity="center"
+                    android:text="电费"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/Cost_Unit1"
+                    android:layout_width="60dp"
+                    android:layout_height="match_parent"
+
+                    android:gravity="center_vertical|right"
+                    android:text="￥"
+                    android:textColor="#000000"
+
+                    android:textSize="33sp" />
+
+                <TextView
+                    android:id="@+id/Cost"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical|left"
+
+                    android:text="0.00"
+                    android:textColor="#000000"
+                    android:textSize="33sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/SeizeSeatText2"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_weight="0.07" />
+
+    <ImageButton
+        android:id="@+id/button_ACSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:srcCompat="@android:drawable/ic_lock_power_off" />
+
+    <LinearLayout
+        android:id="@+id/Switch_Pad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.07"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/FunSpeed_Switch_Pad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <ImageButton
+                android:id="@+id/button_FunSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:srcCompat="@drawable/icon_model_wind" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/Temperature_Switch_Pad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <ImageButton
+                android:id="@+id/button_UpSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@android:drawable/arrow_up_float" />
+
+            <ImageButton
+                android:id="@+id/button_DownSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@android:drawable/arrow_down_float" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

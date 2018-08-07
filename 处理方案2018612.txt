@@ -1,0 +1,43 @@
+InputStream is;
+InputStreamReader isr;
+BufferReader br;
+//*2 4 6 8一组，9和它们是并列关系。它们自己接收到的会往各自ArrayList里面写，9收到的也会往里面写。它们在处理的时候，会提取ArrayList的第一个，
+//*处理一个就把这个第一个给删了。存在快速请求，只收到了服务器发来的一部分的情况，那判断条件应该是先判断这个ArrayList是否为空。
+//*当ArrayList是空的时候，给一个空串给线程去比较，让它不阻塞。PS：receiveMessage.equals()要改。
+//*存在一个问题，9的线程不知道收到的8|1是升温的还是降温的。设一个全局变量boolean UpOrDown
+ArrayList<String> _2_OpenPacket = new ArrayList<String>();
+ArrayList<String> _4_ShutDownPacket = new ArrayList<String>();
+ArrayList<String> _6_FunSpeedPacket = new ArrayList<String>();
+ArrayList<String> _8_UpTempPacket = new ArrayList<String>();
+ArrayList<String> _8_DownTempPacket = new ArrayList<String>();
+
+//9只需1个，每次取最后一个更新。
+ArrayList<String> _9_StatePacket = new ArrayList<String>();
+
+//10只有1个，如果有9先往_9_StatePacket里写，检测10到之后把9的最后一个拿出来更新一下，然后把其他的ArrayList全删除，停机
+ArrayList<String> _10_ShutMachinePacket = new ArrayList<String>();
+
+String[][] GetMessageSplit() {
+	br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+	char[] ch = new char[1024];
+        br.read(ch);
+        String str = String.valueOf(ch);
+	String [][] verticalSplitString;
+        String [] starSplitString = str.split("\\*");
+	//处理第一个串
+        starSplitString = DealWithFirstSplitStr(starSplitString);
+
+        //处理最后一个串
+        starSplitString = DealWithLastSplitStr(starSplitString);
+
+	int m = starSplitString.length;
+        verticalSplitString = new String[m][];
+
+        for(int i=0; i<verticalSplitString.length; i++) {
+
+            String[] everSplit= starSplitString[i].split("\\|");
+            verticalSplitString[i] = everSplit;
+        }
+        
+	return verticalSplitString;
+}
