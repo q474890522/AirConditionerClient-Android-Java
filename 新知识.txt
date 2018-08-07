@@ -1,6 +1,0 @@
-1. for  foreach
-foreach用于遍历全部，效率高
-2. String StringBuilder
-String 拼接使用 String + String
-StringBuilder 拼接使用 Append(Object i)并且支持很多类型
-String的拼接实际上使用的是StringBuilder的Append()方法，并且每次拼接完创建一个新的String对象，效率比StringBuilder拼接低很多。
