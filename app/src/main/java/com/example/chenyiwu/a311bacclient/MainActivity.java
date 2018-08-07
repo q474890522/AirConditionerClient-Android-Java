@@ -1,15 +1,10 @@
 package com.example.chenyiwu.a311bacclient;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
-import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +15,8 @@ import java.net.Socket;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
@@ -65,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private Lock lock = new ReentrantLock();
 
     //标志处理9状态包时处理了其他的报文，用于异步
-    private boolean ifHaveBesides_9_ = false;
+    //private volatile boolean ifHaveBesides_9_ = false;
 
     //看是否在调度中
     //private boolean ifInDispatching = true;
@@ -76,19 +73,19 @@ public class MainActivity extends AppCompatActivity {
 //    //耗能
 //    private String Energy;
 
-    ArrayList<String> _2_OpenPacket = new ArrayList<>();
-    ArrayList<String> _4_ShutDownPacket = new ArrayList<>();
-    ArrayList<String> _6_FunSpeedPacket = new ArrayList<>();
-    ArrayList<String> _8_UpTempPacket = new ArrayList<>();
-    ArrayList<String> _8_DownTempPacket = new ArrayList<>();
-    ArrayList<String> _9_StatePacket = new ArrayList<>();
-    ArrayList<String> _10_ShutMachinePacket = new ArrayList<>();
+    List<String> _2_OpenPacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _4_ShutDownPacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _6_FunSpeedPacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _8_UpTempPacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _8_DownTempPacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _9_StatePacket = Collections.synchronizedList(new ArrayList<String>());
+    List<String> _10_ShutMachinePacket = Collections.synchronizedList(new ArrayList<String>());
 
-    boolean upFlag = false, downFlag = false;
+    volatile boolean upFlag = false, downFlag = false;
 
-    boolean isOpen_10 = false, isOpen_9 = false;
+    volatile boolean isOpen_10 = false, isOpen_9 = false;
 
-    boolean ifSend_3 = false; // 让4不被夺走
+    //volatile boolean ifSend_3 = false; // 让4不被夺走
     //处理分割*后第一个数组元素为空的情况
     String[] DealWithFirstSplitStr(String[] s) {
         for(int k=0; k<s.length-1; k++){
@@ -99,245 +96,47 @@ public class MainActivity extends AppCompatActivity {
         return s;
     }
 
-    //加分隔符|
-    String AddSplitVertToStr(String [] s) {
-        for(int i=0; i<s.length-1; i++){
-            s[i] = s[i] + "|";
-        }
-//        String str = "";
-//        for(int i=0; i<s.length; i++){
-//            str = str + s[i];
-//        }
-//        return str;
 
-        //效率更高的拼接方法和遍历方法
-        StringBuilder strAppend = new StringBuilder();
-        for(String str : s){
-            strAppend.append(str);
-        }
-        return strAppend.toString();
-
-    }
-
-    String DealWithLastSplitStrChanLong(String strLast) {
-        String addedSplitStr = strLast;
-        String [] vSplit = strLast.split("\\|");//vSplit字符串数组用于存放x|x|x分割|后的结果
-        int vSplitLen = vSplit.length;
-        String vSplitLast = vSplit[vSplitLen - 1];//问题出在最后一位，取出最后一位处理，格式x？？？？
-        System.out.println(vSplitLast);
-        if(vSplitLast.charAt(5)>='0' && vSplitLast.charAt(5)<='9'){//最后一位是能耗，有XXX.XX, XX.XX, X.XX，这里是处理xxx.xx
-            vSplitLast = vSplitLast.substring(0, 6);//去掉？？？？
-            vSplit[vSplitLen - 1] = vSplitLast;//让vSplit最后一位改变成去掉？？？后的结果
-            addedSplitStr = AddSplitVertToStr(vSplit);//再把|分隔符加回来
-            System.out.println("vSplitLast:" + vSplitLast);
-            System.out.println("addedSplitStr:" + addedSplitStr);
-        }
-        else if(vSplitLast.charAt(4)>='0' && vSplitLast.charAt(4) <= '9'){//处理xx.xx
-            vSplitLast = vSplitLast.substring(0, 5);
-            vSplit[vSplitLen - 1] = vSplitLast;
-            addedSplitStr = AddSplitVertToStr(vSplit);
-            System.out.println("vSplitLast:" + vSplitLast);
-            System.out.println("addedSplitStr:" + addedSplitStr);
-        }
-        else if(vSplitLast.charAt(3)>='0' && vSplitLast.charAt(3) <= '9'){//处理x.xx
-            vSplitLast = vSplitLast.substring(0, 4);
-            vSplit[vSplitLen - 1] = vSplitLast;
-            addedSplitStr = AddSplitVertToStr(vSplit);
-            System.out.println("vSplitLast:" + vSplitLast);
-            System.out.println("addedSplitStr:" + addedSplitStr);
-        }
-        else {
-            System.out.println("费用格式错误");
-        }
-
-        return addedSplitStr;
-    }
-    //处理结尾符？？？？？？
-    String[] DealWithLastSplitStr(String[] s) {
-        String str = s[s.length - 1];//去*后的数组中最后一串，格式：x|x|x？？？？？？？
-        System.out.println("sLast:" + str);
-        char ch = str.charAt(0);
-        switch (ch) {
-            case '2'://开机报文
-                System.out.println("case:2");
-                s[s.length - 1] = DealWithLastSplitStrChanLong(str);
-                break;
-            case '4':
-                s[s.length - 1] = s[s.length - 1].substring(0, 3);
-                break;
-            case '6':
-                s[s.length - 1] = s[s.length - 1].substring(0, 3);
-                break;
-            case '8':
-                s[s.length - 1] = s[s.length - 1].substring(0, 3);
-                break;
-            case '9':
-                s[s.length - 1] = DealWithLastSplitStrChanLong(str);
-                break;
-            case '1': //相当于10
-                s[s.length - 1] = s[s.length - 1].substring(0, 7);
-                break;
-            default:
-                break;
-        }
-
-        return s;
-    }
-
-    public String[][] GetMessageSplit() throws IOException {
+    public void GetMessageSplit() throws IOException {
         br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         char[] ch = new char[1024];
-        br.read(ch);
-        String str = String.valueOf(ch);
-        System.out.println(str);
+        int len = br.read(ch);
 
-        String [][] verticalSplitString;
-        String [] starSplitString = str.split("\\*");
+        String message = new String(ch, 0, len);
 
-        //处理第一个串
-        starSplitString = DealWithFirstSplitStr(starSplitString);
+        String[] star = message.split("\\*");
 
-        //处理最后一个串
-        starSplitString = DealWithLastSplitStr(starSplitString);
+        star = DealWithFirstSplitStr(star);
 
-        System.out.println("starSplitString:"+ "length:" + starSplitString.length);//
-        for(int i=0; i<starSplitString.length; i++){
-            System.out.println("("+starSplitString[i]+")");
-        }
-
-        int m = starSplitString.length;
-        verticalSplitString = new String[m][];
-
-        for(int i=0; i<verticalSplitString.length; i++) {
-
-            String[] everSplit= starSplitString[i].split("\\|");
-            verticalSplitString[i] = everSplit;
-        }
-        String vertilast = verticalSplitString[m-1][verticalSplitString[m-1].length-1];
-        System.out.println("last:" + vertilast);
-
-        //输出vertical
-        System.out.println("verticalSplitString:");//
-        for(int i=0; i<verticalSplitString.length; i++) {
-            System.out.print(i + ":");
-            for(int j=0; j<verticalSplitString[i].length; j++){
-                System.out.println("(" + verticalSplitString[i][j] + ")");
-            }
-        }
-
-        return verticalSplitString;
-    }
-
-    //专门处理9
-    public String[][] GetMessageSplit(BufferedReader br) throws IOException {
-        char[] ch = new char[1024];
-        br.read(ch);
-        String str = String.valueOf(ch);
-        System.out.println(str);
-
-        String [][] verticalSplitString;
-        String [] starSplitString = str.split("\\*");
-
-        //处理第一个串
-        starSplitString = DealWithFirstSplitStr(starSplitString);
-
-        //处理最后一个串
-        starSplitString = DealWithLastSplitStr(starSplitString);
-
-        System.out.println("starSplitString:"+ "length:" + starSplitString.length);//
-        for(int i=0; i<starSplitString.length; i++){
-            System.out.println("("+starSplitString[i]+")");
-        }
-
-        int m = starSplitString.length;
-        verticalSplitString = new String[m][];
-
-        for(int i=0; i<verticalSplitString.length; i++) {
-
-            String[] everSplit= starSplitString[i].split("\\|");
-            verticalSplitString[i] = everSplit;
-        }
-        String vertilast = verticalSplitString[m-1][verticalSplitString[m-1].length-1];
-        System.out.println("last:" + vertilast);
-
-        //输出vertical
-        System.out.println("verticalSplitString:");//
-        for(int i=0; i<verticalSplitString.length; i++) {
-            System.out.print(i + ":");
-            for(int j=0; j<verticalSplitString[i].length; j++){
-                System.out.println("(" + verticalSplitString[i][j] + ")");
-            }
-        }
-
-        return verticalSplitString;
-    }
-
-    //分配分割处理好的报文二维数组String[][] hasVerticalSplit 给全局的报文数组列表Arraylist
-    void DistributePacket(String[][] haveVerticalSplit){
-
-        for(int i=0; i<haveVerticalSplit.length; i++){
-            if(haveVerticalSplit[i][0].equals("2")){
-                _2_OpenPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-            }
-            else if(haveVerticalSplit[i][0].equals("4")){
-                _4_ShutDownPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-            }
-            else if(haveVerticalSplit[i][0].equals("6")){
-                _6_FunSpeedPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-            }
-            else if(haveVerticalSplit[i][0].equals("9")){
-                _9_StatePacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-            }
-            else if(haveVerticalSplit[i][0].equals("10")){
-                _10_ShutMachinePacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-            }
-            else if(haveVerticalSplit[i][0].equals("8")){
-                if(upFlag) {
-                    _8_UpTempPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                    upFlag = false;
-                }
-                else if(downFlag) {
-                    _8_DownTempPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                    downFlag = false;
-                }
-            }
-        }
-    }
-
-    //专门处理9
-    void DistributePacket(String[][] haveVerticalSplit, BufferedReader br){
-
-        for(int i=0; i<haveVerticalSplit.length; i++){
-            if(haveVerticalSplit[i][0].equals("2")){
-                _2_OpenPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                ifHaveBesides_9_ = true;
-            }
-            else if(haveVerticalSplit[i][0].equals("4")){
-                _4_ShutDownPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                ifHaveBesides_9_ = true;
-            }
-            else if(haveVerticalSplit[i][0].equals("6")){
-                _6_FunSpeedPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                ifHaveBesides_9_ = true;
-            }
-            else if(haveVerticalSplit[i][0].equals("9")){
-                _9_StatePacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-
-            }
-            else if(haveVerticalSplit[i][0].equals("10")){
-                _10_ShutMachinePacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                ifHaveBesides_9_ = true;
-            }
-            else if(haveVerticalSplit[i][0].equals("8")){
-                ifHaveBesides_9_ = true;
-                if(upFlag) {
-                    _8_UpTempPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                    upFlag = false;
-                }
-                else if(downFlag) {
-                    _8_DownTempPacket.add(AddSplitVertToStr(haveVerticalSplit[i]));
-                    downFlag = false;
-                }
+        for(int i = 0; i < star.length; i++) {
+            switch(star[i].charAt(0)) {
+                case '2':
+                    _2_OpenPacket.add(star[i]);
+                    break;
+                case '4':
+                    _4_ShutDownPacket.add(star[i]);
+                    break;
+                case '6':
+                    _6_FunSpeedPacket.add(star[i]);
+                    break;
+                case '9':
+                    _9_StatePacket.add(star[i]);
+                    break;
+                case '1':
+                    _10_ShutMachinePacket.add(star[i]);
+                    break;
+                case '8':
+                    if(upFlag) {
+                        _8_UpTempPacket.add(star[i]);
+                        upFlag = false;
+                    }
+                    else if(downFlag) {
+                        _8_DownTempPacket.add(star[i]);
+                        downFlag = false;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -365,14 +164,6 @@ public class MainActivity extends AppCompatActivity {
     boolean DealWithChangeFunRequest() throws IOException {
 
         String receiveMessage = "";
-
-        if(!ifHaveBesides_9_) {
-            //处理头串尾串并分割好
-            String[][] receiveMessageSplit = GetMessageSplit();
-            //分配报文
-            DistributePacket(receiveMessageSplit);
-        }
-
 
         for(int i=0; i<_6_FunSpeedPacket.size(); i++){
             System.out.println("_6_FunSpeedPacket["+i+"]" + _6_FunSpeedPacket.get(i));
@@ -445,12 +236,6 @@ public class MainActivity extends AppCompatActivity {
     //处理加温请求
     boolean DealWithUpRequest() throws IOException {
         String receiveMessage = "";
-        if(!ifHaveBesides_9_) {
-            //处理头串尾串并分割好
-            String[][] receiveMessageSplit = GetMessageSplit();
-            //分配报文
-            DistributePacket(receiveMessageSplit);
-        }
 
         for(int i=0; i<_8_UpTempPacket.size(); i++){
             System.out.println("_8_UpTempPacket["+i+"]" + _8_UpTempPacket.get(i));
@@ -476,12 +261,6 @@ public class MainActivity extends AppCompatActivity {
     boolean DealWithDownRequest() throws IOException {
         String receiveMessage = "";
 
-        if(!ifHaveBesides_9_){
-            //处理头串尾串并分割好
-            String[][] receiveMessageSplit = GetMessageSplit();
-            //分配报文
-            DistributePacket(receiveMessageSplit);
-        }
 
         for(int i=0; i<_8_DownTempPacket.size(); i++){
             System.out.println("_8_DownTempPacket["+i+"]" + _8_DownTempPacket.get(i));
@@ -515,29 +294,27 @@ public class MainActivity extends AppCompatActivity {
     //处理开机请求
     boolean DealWithOpenRequest() throws IOException {
         //处理头串尾串，并分割
-        String[][] receiveMessageSplit = GetMessageSplit();
+        //String[][] receiveMessageSplit = GetMessageSplit();
+        GetMessageSplit();
 
         String receiveMessage = "";
 
         //分配报文
-        DistributePacket(receiveMessageSplit);
+        //DistributePacket(receiveMessageSplit);
 
         //待处理开机报文
         if(!_2_OpenPacket.isEmpty()) {
             receiveMessage = _2_OpenPacket.get(0);
         }
         /*操作
-        *待写
-        *
-        */
+         *待写
+         *
+         */
         String[] splitRecvMsg = receiveMessage.split("\\|");
         //判断是否开机成功
         if(splitRecvMsg[1].equals("0")){
             System.out.println("开机失败。");
-            if(ACSwitchFlag)
-                ACSwitchFlag = false;
-            else
-                ACSwitchFlag = true;
+            ACSwitchFlag = true;
             return false;
         }
         else {
@@ -568,22 +345,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void SendShutDownRequest() throws IOException {
-        ifSend_3 = true;
+        //ifSend_3 = true;
         out = socket.getOutputStream();
         out.write(("*3|311B").getBytes());
         out.flush();
     }
 
-    void DealWithShutDownRequest() throws IOException, InterruptedException {
+    void DealWithShutDownRequest() throws IOException {
         String receiveMessage = "";
-        if(!ifHaveBesides_9_) {
-            //处理头串尾串，并分割
-            String[][] receiveMessageSplit = GetMessageSplit();
-            //分配报文
-            DistributePacket(receiveMessageSplit);
-        }
+        //GetMessageSplit();
 
-        sleep(200);
+        //sleep(200);
         for(int i=0; i<_4_ShutDownPacket.size(); i++){
             System.out.println("_4_ShutDownPacket[0]:" + _4_ShutDownPacket.get(i));
         }
@@ -595,6 +367,8 @@ public class MainActivity extends AppCompatActivity {
         //关机操作
         if(receiveMessage.equals("4|1")){
             ACSwitchFlag = true;
+            stop_9_10();//关掉线程9——10
+
             System.out.println("关机成功");
             _4_ShutDownPacket.remove(0);
 
@@ -605,13 +379,13 @@ public class MainActivity extends AppCompatActivity {
 
                 //设置当前温度
                 setCurrentTemp(splitRecvMsg[2]);
-                sleep(100);
+                //sleep(100);
                 //设置耗能
                 setEnergyConsume(splitRecvMsg[3]);
-                sleep(100);
+                //sleep(100);
                 //设置花费
                 setCost(splitRecvMsg[4]);
-                sleep(200);
+                //sleep(200);
             }
 
             //清空ArrayList
@@ -627,12 +401,12 @@ public class MainActivity extends AppCompatActivity {
             out.close();
             socket.close();
 
-            ifSend_3 = false;
+            //ifSend_3 = false;
         }
         else {
             System.out.println(receiveMessage);
             System.out.println("关机失败");
-            _4_ShutDownPacket.remove(0);
+            _4_ShutDownPacket.clear();
         }
     }
 
@@ -642,20 +416,13 @@ public class MainActivity extends AppCompatActivity {
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
-                while(true) {
+                while(isOpen_9) {
                     try {
-                        sleep(2000);
+                        //sleep(2000);
 
                         String receiveMessage = "";
 
-                        String[][] receiveMessageSplit = {};
-
-                        BufferedReader br_9 = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        //头串尾串分割处理
-                        if(!ifSend_3)
-                            receiveMessageSplit = GetMessageSplit(br_9);
-
-                        DistributePacket(receiveMessageSplit, br_9);
+                        GetMessageSplit();
 
                         for(int i=0; i<_9_StatePacket.size(); i++){
                             System.out.println("_9_StatePacket["+i+"]" + _9_StatePacket.get(i));
@@ -677,9 +444,6 @@ public class MainActivity extends AppCompatActivity {
                             _9_StatePacket.clear();
                         }
 
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        break;
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -692,9 +456,9 @@ public class MainActivity extends AppCompatActivity {
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
-                while(true) {
+                while(isOpen_10) {
                     try {
-                        sleep(500);
+                        //sleep(500);
                         out = socket.getOutputStream();
                         String currentTemp;
                         String aimTemp;
@@ -711,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
                             //设置过30s加一度，回温
 
                             if(getMode().equals("冷")){
-                                sleep(60*1000);
+                                sleep(10*1000);
                                 setCurrentTemp(addCurTempNotSet());
                                 currentTemp = getCurrentTemp();
                                 aimTemp = getAimTemp();
@@ -723,7 +487,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }
                             else if(getMode().equals("热")){
-                                sleep(60*1000);
+                                sleep(10*1000);
                                 setCurrentTemp(decCurTempNotSet());
                                 currentTemp = getCurrentTemp();
                                 aimTemp = getAimTemp();
@@ -752,6 +516,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    public void stop_9_10() {
+        isOpen_9 = false;
+        isOpen_10 = false;
     }
 
     @Override
@@ -784,36 +553,30 @@ public class MainActivity extends AppCompatActivity {
                 if(ACSwitchFlag == true) {
                     //利用线程池开启一个线程并执行
                     ACSwitchFlag = false;
-                    ifHaveBesides_9_ = false;
+                    //ifHaveBesides_9_ = false;
                     mThreadPool.execute(new Runnable() {
                         @Override
                         public void run() {
                             try {
                                 //创建Socket对象&指定服务端IP&端口号
-                                socket = new Socket("10.206.12.133", 8888);
+                                socket = new Socket("192.168.1.120", 8888);
 
                                 // 判断客户端和服务器是否连接成功
                                 System.out.println(socket.isConnected());
 
                                 //发送开机请求给服务端
                                 SendOpenRequest();
-                                sleep(200);
+                                //sleep(200);
                                 //处理开机请求
                                 boolean ifOpen = DealWithOpenRequest();
                                 //需要判断开机是否成功，成功才开始处理9，10
                                 if(ifOpen){
                                     //ifHuiWen = false;
-                                    if(!isOpen_10){
-                                        isOpen_10 = true;
-                                        DealWith_10_ShutMachinePacket();
-                                    }
-
-                                    if(!isOpen_9){
-                                        isOpen_9 = true;
-                                        //处理状态包_9_StatePacket
-                                        DealWith_9_StatePacket();
-                                    }
-
+                                    isOpen_9 = true;
+                                    isOpen_10 = true;
+                                    //处理状态包_9_StatePacket和10停机包
+                                    DealWith_9_StatePacket();
+                                    DealWith_10_ShutMachinePacket();
                                 }
                                 else {
                                     //有待商榷
@@ -822,8 +585,6 @@ public class MainActivity extends AppCompatActivity {
                                     socket.close();
                                 }
                             } catch(IOException e) {
-                                e.printStackTrace();
-                            } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                         }
@@ -834,13 +595,11 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try{
-                                ifHaveBesides_9_ = false;
+                                //ifHaveBesides_9_ = false;
                                 SendShutDownRequest();
-                                sleep(400);
+                                //sleep(400);
                                 DealWithShutDownRequest();
                             } catch(IOException e) {
-                                e.printStackTrace();
-                            } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                         }
@@ -858,22 +617,19 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            lock.lock();
-                            ifHaveBesides_9_ = false;
-                                    SendChangeFunRequest();
-                                    sleep(200);
-                                    boolean ifChange = DealWithChangeFunRequest();
-                                    if(ifChange)
-                                        System.out.println("调风成功");
-                                    else
-                                        System.out.println("调风失败");
+                            //lock.lock();
+                            //ifHaveBesides_9_ = false;
+                            SendChangeFunRequest();
+                            //sleep(200);
+                            boolean ifChange = DealWithChangeFunRequest();
+                            if (ifChange)
+                                System.out.println("调风成功");
+                            else
+                                System.out.println("调风失败");
                         } catch (IOException e) {
                             e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        finally {
-                            lock.unlock();
+                        } finally {
+                            //lock.unlock();
                         }
                     }
                 });
@@ -888,25 +644,23 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            lock.lock();
-                            ifHaveBesides_9_ = false;
-                                    boolean ifSendSuccess = SendUpTempRequest();
-                                    if(ifSendSuccess) {
-                                        //加温
-                                        sleep(200);
-                                        boolean ifUp = DealWithUpRequest();
-                                        if(ifUp)
-                                            System.out.println("加温成功");
-                                        else
-                                            System.out.println("加温失败");
-                                    }
+                            //lock.lock();
+                            //ifHaveBesides_9_ = false;
+                            boolean ifSendSuccess = SendUpTempRequest();
+                            if (ifSendSuccess) {
+                                //加温
+                                //sleep(200);
+                                boolean ifUp = DealWithUpRequest();
+                                if (ifUp)
+                                    System.out.println("加温成功");
+                                else
+                                    System.out.println("加温失败");
+                            }
                         } catch(IOException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         finally {
-                            lock.unlock();
+                            //lock.unlock();
                         }
                     }
                 });
@@ -920,25 +674,23 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            lock.lock();
+                            //lock.lock();
                             //发降温请求
-                            ifHaveBesides_9_ = false;
-                                    boolean ifSendSuccess = SendDownTempRequest();
-                                    if(ifSendSuccess) {
-                                        sleep(200);
-                                        boolean ifDown = DealWithDownRequest();
-                                        if(ifDown)
-                                            System.out.println("减温成功");
-                                        else
-                                            System.out.println("减温失败");
-                                    }
+                            //ifHaveBesides_9_ = false;
+                            boolean ifSendSuccess = SendDownTempRequest();
+                            if (ifSendSuccess) {
+                                //sleep(200);
+                                boolean ifDown = DealWithDownRequest();
+                                if (ifDown)
+                                    System.out.println("减温成功");
+                                else
+                                    System.out.println("减温失败");
+                            }
                         } catch(IOException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         finally {
-                            lock.unlock();
+                            //lock.unlock();
                         }
                     }
                 });
