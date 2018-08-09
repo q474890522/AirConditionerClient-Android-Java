@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 import static java.lang.Thread.sleep;
+import static java.lang.Thread.yield;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -85,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
 
     volatile boolean isOpen_10 = false, isOpen_9 = false;
 
+    static final int sleepTimes = 100;
+    static final int returnTemp = 10 * 1000;
     //volatile boolean ifSend_3 = false; // 让4不被夺走
     //处理分割*后第一个数组元素为空的情况
     String[] DealWithFirstSplitStr(String[] s) {
@@ -108,6 +111,14 @@ public class MainActivity extends AppCompatActivity {
 
         star = DealWithFirstSplitStr(star);
 
+        StringBuffer s = new StringBuffer();
+        for(int i = 0; i < star.length; i++) {
+            s.append(star[i]);
+            s.append("|");
+        }
+        s.deleteCharAt(s.length() - 1);
+        System.out.println("StringBuffer: " + s.toString());
+
         for(int i = 0; i < star.length; i++) {
             switch(star[i].charAt(0)) {
                 case '2':
@@ -118,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case '6':
                     _6_FunSpeedPacket.add(star[i]);
+                    System.out.println("insert into ArrayList 6");
                     break;
                 case '9':
                     _9_StatePacket.add(star[i]);
@@ -139,29 +151,33 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
         }
+
     }
 
     //发送调风请求
-    void SendChangeFunRequest() throws IOException {
+    boolean SendChangeFunRequest() throws IOException {
         //发风速请求
         out = socket.getOutputStream();
         String strFunSpeed = getFunSpeed();
-
         if(strFunSpeed.equals("高")){
             out.write(("*5|311B|1").getBytes());
             out.flush();
+            return true;
         }
         else if(strFunSpeed.equals("中")){
             out.write(("*5|311B|3").getBytes());
             out.flush();
+            return true;
         }
         else if(strFunSpeed.equals("低")){
             out.write(("*5|311B|2").getBytes());
             out.flush();
+            return true;
         }
+        return false;
     }
 
-    boolean DealWithChangeFunRequest() throws IOException {
+    boolean DealWithChangeFunRequest() {
 
         String receiveMessage = "";
 
@@ -423,7 +439,7 @@ public class MainActivity extends AppCompatActivity {
                         String receiveMessage = "";
 
                         GetMessageSplit();
-
+                        //notify();
                         for(int i=0; i<_9_StatePacket.size(); i++){
                             System.out.println("_9_StatePacket["+i+"]" + _9_StatePacket.get(i));
                         }
@@ -475,7 +491,7 @@ public class MainActivity extends AppCompatActivity {
                             //设置过30s加一度，回温
 
                             if(getMode().equals("冷")){
-                                sleep(10*1000);
+                                sleep(returnTemp);
                                 setCurrentTemp(addCurTempNotSet());
                                 currentTemp = getCurrentTemp();
                                 aimTemp = getAimTemp();
@@ -487,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }
                             else if(getMode().equals("热")){
-                                sleep(10*1000);
+                                sleep(returnTemp);
                                 setCurrentTemp(decCurTempNotSet());
                                 currentTemp = getCurrentTemp();
                                 aimTemp = getAimTemp();
@@ -597,9 +613,12 @@ public class MainActivity extends AppCompatActivity {
                             try{
                                 //ifHaveBesides_9_ = false;
                                 SendShutDownRequest();
-                                //sleep(400);
+                                //用于让出CPU时间片给Get线程
+                                sleep(sleepTimes);
                                 DealWithShutDownRequest();
                             } catch(IOException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                         }
@@ -619,14 +638,21 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             //lock.lock();
                             //ifHaveBesides_9_ = false;
-                            SendChangeFunRequest();
-                            //sleep(200);
-                            boolean ifChange = DealWithChangeFunRequest();
-                            if (ifChange)
-                                System.out.println("调风成功");
-                            else
-                                System.out.println("调风失败");
+                            boolean ifSendSuccess = SendChangeFunRequest();
+
+                            if(ifSendSuccess) {
+                                //用于让出CPU时间片给Get线程
+                                sleep(sleepTimes);
+                                boolean ifChange = DealWithChangeFunRequest();
+                                if (ifChange)
+                                    System.out.println("调风成功");
+                                else
+                                    System.out.println("调风失败");
+                            }
+
                         } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         } finally {
                             //lock.unlock();
@@ -647,9 +673,11 @@ public class MainActivity extends AppCompatActivity {
                             //lock.lock();
                             //ifHaveBesides_9_ = false;
                             boolean ifSendSuccess = SendUpTempRequest();
+
                             if (ifSendSuccess) {
                                 //加温
-                                //sleep(200);
+                                //用于让出CPU时间片给Get线程
+                                sleep(sleepTimes);
                                 boolean ifUp = DealWithUpRequest();
                                 if (ifUp)
                                     System.out.println("加温成功");
@@ -658,8 +686,9 @@ public class MainActivity extends AppCompatActivity {
                             }
                         } catch(IOException e) {
                             e.printStackTrace();
-                        }
-                        finally {
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } finally {
                             //lock.unlock();
                         }
                     }
@@ -678,8 +707,10 @@ public class MainActivity extends AppCompatActivity {
                             //发降温请求
                             //ifHaveBesides_9_ = false;
                             boolean ifSendSuccess = SendDownTempRequest();
+
                             if (ifSendSuccess) {
-                                //sleep(200);
+                                //用于让出CPU时间片给Get线程
+                                sleep(sleepTimes);
                                 boolean ifDown = DealWithDownRequest();
                                 if (ifDown)
                                     System.out.println("减温成功");
@@ -688,8 +719,9 @@ public class MainActivity extends AppCompatActivity {
                             }
                         } catch(IOException e) {
                             e.printStackTrace();
-                        }
-                        finally {
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } finally {
                             //lock.unlock();
                         }
                     }
